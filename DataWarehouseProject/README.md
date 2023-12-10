@@ -22,3 +22,7 @@ Dimension tables
 * songs
 * artists
 * time - timestamps of the records in songplays
+
+We will distribute the `user`, `artist`, and `time` tables using the distribution style ALL so that there is a replica of each table on each slice.
+
+`songplays` is the event based fact table so we will distribute it across slices using `song_id` as the distribution key. Likewise, `songs` will also be distributed by `song_id`.

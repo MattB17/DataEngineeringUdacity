@@ -52,24 +52,65 @@ staging_songs_table_create = ("""
     artist_name        VARCHAR(100),
     song_id            VARCHAR(25) NOT NULL,
     title              VARCHAR(100),
-    duration           DECIMAL,
-    year               INTEGER
+    duration           DECIMAL NOT NULL,
+    year               INTEGER NOT NULL
   );
 """)
 
 songplay_table_create = ("""
+  CREATE TABLE songplay (
+    songplay_id   INTEGER NOT NULL,
+    start_time    INTEGER NOT NULL sortkey,
+    user_id       INTEGER NOT NULL,
+    level         VARCHAR(10),
+    song_id       VARCHAR(25) NOT NULL distkey,
+    artist_id     VARCHAR(25) NOT NULL,
+    session_id    INTEGER NOT NULL,
+    location      VARCHAR(100),
+    user_agent    VARCHAR(100)
+  );
 """)
 
 user_table_create = ("""
+  CREATE TABLE user (
+    user_id       INTEGER NOT NULL sortkey,
+    first_name    VARCHAR(15),
+    last_name     VARCHAR(15),
+    gender        VARCHAR(1),
+    level         VARCHAR(10)
+  ) diststyle all;
 """)
 
 song_table_create = ("""
+  CREATE TABLE song (
+    song_id       VARCHAR(25) NOT NULL sortkey distkey,
+    title         VARCHAR(100),
+    artist_id     VARCHAR(25) NOT NULL,
+    year          INTEGER NOT NULL,
+    duration      DECIMAL NOT NULL
+  );
 """)
 
 artist_table_create = ("""
+  CREATE TABLE artist (
+    artist_id     VARCHAR(25) NOT NULL sortkey,
+    name          VARCHAR(100),
+    location      VARCHAR(100),
+    latitude      DECIMAL,
+    longitdue     DECIMAL
+  ) diststyle all;
 """)
 
 time_table_create = ("""
+  CREATE TABLE time (
+    start_time    INTEGER NOT NULL sortkey,
+    hour          INTEGER NOT NULL,
+    day           INTEGER NOT NULL,
+    week          INTEGER NOT NULL,
+    month         INTEGER NOT NULL,
+    year          INTEGER NOT NULL,
+    weekday       VARCHAR(1) NOT NULL
+  ) diststyle all;
 """)
 
 # STAGING TABLES
