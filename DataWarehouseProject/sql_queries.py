@@ -6,21 +6,55 @@ config = configparser.ConfigParser()
 config.read('dwh.cfg')
 
 # DROP TABLES
+def drop_table_statement(table_name):
+    return "DROP TABLE IF EXISTS {};".format(table_name)
 
-staging_events_table_drop = ""
-staging_songs_table_drop = ""
-songplay_table_drop = ""
-user_table_drop = ""
-song_table_drop = ""
-artist_table_drop = ""
-time_table_drop = ""
+staging_events_table_drop = drop_table_statement("staging_events")
+staging_songs_table_drop = drop_table_statement("staging_songs")
+songplay_table_drop = drop_table_statement("songplay")
+user_table_drop = drop_table_statement("user")
+song_table_drop = drop_table_statement("song")
+artist_table_drop = drop_table_statement("artist")
+time_table_drop = drop_table_statement("time")
 
 # CREATE TABLES
 
 staging_events_table_create= ("""
+  CREATE TABLE staging_events (
+    event_id        INTERVAL(0, 1)
+    artist          VARCHAR(100),
+    auth            VARCHAR(25),
+    firstName       VARCHAR(15),
+    gender          VARCHAR(1),
+    itemInSession   INTEGER NOT NULL,
+    lastName        VARCHAR(15),
+    length          DECIMAL,
+    level           VARCHAR(10),
+    location        VARCHAR(100),
+    method          VARCHAR(6),
+    page            VARCHAR(25),
+    registration    DECIMAL,
+    sessionId       INTEGER NOT NULL,
+    song            VARCHAR(100),
+    status          INTEGER NOT NULL,
+    ts              INTEGER NOT NULL,
+    userAgent       VARCHAR(100),
+    userId          INTEGER NOT NULL
+  );
 """)
 
 staging_songs_table_create = ("""
+  CREATE TABLE staging_songs (
+    artist_id          VARCHAR(25) NOT NULL,
+    artist_latitude    DECIMAL,
+    artist_longitude   DECIMAL,
+    artist_location    VARCHAR(50),
+    artist_name        VARCHAR(100),
+    song_id            VARCHAR(25) NOT NULL,
+    title              VARCHAR(100),
+    duration           DECIMAL,
+    year               INTEGER
+  );
 """)
 
 songplay_table_create = ("""
