@@ -1,10 +1,11 @@
 import pandas as pd
 import json
+import time
 import utils
 
 def create_iam_redshift_role(iam_client, role_name):
     try:
-        iam_client.create_role(
+        response = iam_client.create_role(
           Path='/',
           RoleName=role_name,
           Description="Allows Redshift clusters to call AWS services.",
@@ -17,6 +18,47 @@ def create_iam_redshift_role(iam_client, role_name):
         )
     except Exception as e:
         print(e)
+
+
+def create_redshift_cluster(redshift_client, config):
+    try:
+        response = redshift_client.create_cluster(
+          # Hardware parameters.
+          ClusterType=config.get('CLUSTER', 'cluster_type'),
+          NodeType=config.get('CLUSTER', 'node_type'),
+          NumberOfNodes=int(config.get('CLUSTER', 'num_nodes')),
+
+          # Identifiers & Credentials.
+          DBName=config.get('CLUSTER', 'db_name'),
+          ClusterIdentifier=config.get('CLUSTER', 'cluster_identifier'),
+          MasterUsername=config.get('CLUSTER', 'db_user'),
+          MasterUserPassword=config.get('CLUSTER', 'db_password'),
+
+          # IAM role to allow S3 access.
+          IamRoles=[config.get('IAM_ROLE', 'role_arn')])
+    except Exception as e:
+        print(e)
+
+
+def get_cluster_properties(redshift_client, cluster_identifier):
+    return redshift_client.describe_clusters(
+      ClusterIdentifier=cluster_identifier)['Clusters'][0]
+
+
+def setup_tcp_port_for_cluster(ec2_resource, cluster_vpc_id, port):
+    try:
+        vpc = ec2_resource.Vpc(id=cluster_vpc_id)
+        default_sg = list(vpc.security_groups.all())[0]
+
+        default_sg.authorize_ingress(
+          GroupName=default_sg.group_name,
+          CidrIp='0.0.0.0/0',
+          IpProtocol='TCP',
+          FromPort=port,
+          ToPort=port)
+    except Exception as e:
+        print(e)
+
 
 def setup_iam_role_for_redshift(config):
     iam_client = utils.get_iam_client(config)
@@ -33,10 +75,40 @@ def setup_iam_role_for_redshift(config):
 
     return iam_client.get_role(RoleName=role_name)['Role']['Arn']
 
+
+def setup_redshift_cluster(config):
+    redshift_client = utils.get_redshift_client(config)
+
+    create_redshift_cluster(redshift_client, config)
+
+    cluster_identifier = config.get('CLUSTER', 'cluster_identifier')
+    cluster_properties = get_cluster_properties(
+      redshift_client, cluster_identifier)
+
+    while cluster_properties['ClusterStatus'].lower() != "available":
+        # Sleep for 30 seconds then refresh the cluster properties.
+        time.sleep(30)
+        cluster_properties = get_cluster_properties(
+          redshift_client, cluster_identifier)
+
+    ec2_resource = utils.get_ec2_resource(config)
+    setup_tcp_port_for_cluster(
+      ec2_resource, cluster_properties['VpcId'],
+      int(config.get('CLUSTER', 'db_port')))
+
+    endpoint = cluster_properties['Endpoint']['Address']
+    role_arn = cluster_properties['IamRoles'][0]['IamRoleArn']
+    return (endpoint, role_arn)
+
+
 def main():
     config = utils.get_config('dwh.cfg')
 
     config['IAM_ROLE']['role_arn'] = setup_iam_role_for_redshift(config)
+
+    (endpoint, role_arn) = setup_redshift_cluster(config)
+    config['CLUSTER']['endpoint'] = endpoint
+    config['CLUSTER']['role_arn'] = role_arn
 
     with open('dwh.cfg', 'w') as configfile:
         config.write(configfile)
