@@ -6,14 +6,16 @@ config = configparser.ConfigParser()
 config.read('dwh.cfg')
 
 # DROP TABLES
-def drop_table_statement(table_name):
+def drop_table_statement(table_name, cascade=False):
+    if cascade:
+        return "DROP TABLE IF EXISTS {} CASCADE".format(table_name)
     return "DROP TABLE IF EXISTS {};".format(table_name)
 
 staging_events_table_drop = drop_table_statement("staging_events")
 staging_songs_table_drop = drop_table_statement("staging_songs")
 songplay_table_drop = drop_table_statement("songplay")
 user_table_drop = drop_table_statement("user")
-song_table_drop = drop_table_statement("song")
+song_table_drop = drop_table_statement("song", cascade=True)
 artist_table_drop = drop_table_statement("artist")
 time_table_drop = drop_table_statement("time")
 
