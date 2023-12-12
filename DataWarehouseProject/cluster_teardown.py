@@ -1,4 +1,13 @@
 import utils
+import time
+
+def get_cluster_status(redshift_client, config):
+    try:
+        status = redshift_client.describe_clusters(
+          ClusterIdentifier=config.get('CLUSTER', 'cluster_identifier'))
+        return status['Clusters'][0]['ClusterStatus'].lower()
+    except Exception as e:
+        return "deleted"
 
 
 def delete_cluster(config):
@@ -6,6 +15,14 @@ def delete_cluster(config):
     redshift_client.delete_cluster(
       ClusterIdentifier=config.get('CLUSTER', 'cluster_identifier'),
       SkipFinalClusterSnapshot=True)
+
+    status = get_cluster_status(redshift_client, config)
+    while status != "deleted":
+        # Sleep for 30 seconds then refresh the cluster status.
+        print("Status: {}".format(status))
+        time.sleep(30)
+        status = get_cluster_status(redshift_client, config)
+
 
 
 def remove_iam_role(config):

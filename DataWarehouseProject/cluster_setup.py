@@ -87,6 +87,7 @@ def setup_redshift_cluster(config):
 
     while cluster_properties['ClusterStatus'].lower() != "available":
         # Sleep for 30 seconds then refresh the cluster properties.
+        print("Status: {}".format(cluster_properties['ClusterStatus']))
         time.sleep(30)
         cluster_properties = get_cluster_properties(
           redshift_client, cluster_identifier)
@@ -104,11 +105,23 @@ def setup_redshift_cluster(config):
 def main():
     config = utils.get_config('dwh.cfg')
 
-    config['IAM_ROLE']['role_arn'] = setup_iam_role_for_redshift(config)
+    try:
+        config['IAM_ROLE']['role_arn'] = setup_iam_role_for_redshift(config)
+    except Exception as e:
+        print(e)
 
-    (endpoint, role_arn) = setup_redshift_cluster(config)
-    config['CLUSTER']['endpoint'] = endpoint
-    config['CLUSTER']['role_arn'] = role_arn
+    try:
+        (endpoint, role_arn) = setup_redshift_cluster(config)
+        config['CLUSTER']['endpoint'] = endpoint
+        config['CLUSTER']['role_arn'] = role_arn
+    except Exception as e:
+        print(e)
+
+    # Test database connection.
+    conn = utils.connect_to_database(config)
+    cur = conn.cursor()
+
+    print("Connected Successfully")
 
     with open('dwh.cfg', 'w') as configfile:
         config.write(configfile)

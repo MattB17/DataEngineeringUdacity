@@ -1,5 +1,5 @@
 import configparser
-import psycopg2
+import utils
 from sql_queries import copy_table_queries, insert_table_queries
 
 
@@ -19,9 +19,9 @@ def main():
     config = configparser.ConfigParser()
     config.read('dwh.cfg')
 
-    conn = psycopg2.connect("host={} dbname={} user={} password={} port={}".format(*config['CLUSTER'].values()))
+    conn = utils.connect_to_database(config)
     cur = conn.cursor()
-    
+
     load_staging_tables(cur, conn)
     insert_tables(cur, conn)
 
