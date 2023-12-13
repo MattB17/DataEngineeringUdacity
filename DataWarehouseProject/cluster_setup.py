@@ -113,7 +113,6 @@ def main():
     try:
         (endpoint, role_arn) = setup_redshift_cluster(config)
         config['CLUSTER']['endpoint'] = endpoint
-        config['CLUSTER']['role_arn'] = role_arn
     except Exception as e:
         print(e)
 

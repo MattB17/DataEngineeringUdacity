@@ -1,29 +1,31 @@
 import configparser
 import utils
-from sql_queries import copy_table_queries, insert_table_queries
+import sql_queries
 
 
-def load_staging_tables(cur, conn):
-    for query in copy_table_queries:
+def load_staging_tables(cur, conn, config):
+    for query in sql_queries.get_copy_table_queries(config):
         cur.execute(query)
         conn.commit()
+        print("Executed: {}".format(query))
+    print("Loaded staging tables")
 
 
-def insert_tables(cur, conn):
-    for query in insert_table_queries:
+def insert_tables(cur, conn, config):
+    for query in sql_queries.get_insert_table_queries(config):
         cur.execute(query)
         conn.commit()
+    print("Insert into star schema")
 
 
 def main():
-    config = configparser.ConfigParser()
-    config.read('dwh.cfg')
+    config = utils.get_config('dwh.cfg')
 
     conn = utils.connect_to_database(config)
     cur = conn.cursor()
 
-    load_staging_tables(cur, conn)
-    insert_tables(cur, conn)
+    load_staging_tables(cur, conn, config)
+    #insert_tables(cur, conn, config)
 
     conn.close()
 
