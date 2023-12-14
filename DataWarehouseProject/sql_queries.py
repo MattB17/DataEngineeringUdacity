@@ -60,7 +60,7 @@ def get_create_table_queries():
     songplay_table_create = ("""
       CREATE TABLE songplay (
         songplay_id   BIGINT IDENTITY(0, 1),
-        start_time    BIGINT NOT NULL sortkey,
+        start_time    TIMESTAMP NOT NULL sortkey,
         user_id       INTEGER NOT NULL,
         level         VARCHAR(10),
         song_id       VARCHAR(25) NOT NULL distkey,
@@ -97,13 +97,13 @@ def get_create_table_queries():
         name          VARCHAR,
         location      VARCHAR,
         latitude      DECIMAL,
-        longitdue     DECIMAL
+        longitude     DECIMAL
       ) diststyle all;
     """)
 
     time_table_create = ("""
       CREATE TABLE time (
-        start_time    BIGINT NOT NULL sortkey,
+        start_time    TIMESTAMP NOT NULL sortkey,
         hour          INTEGER NOT NULL,
         day           INTEGER NOT NULL,
         week          INTEGER NOT NULL,
@@ -144,7 +144,7 @@ def get_insert_table_queries(config):
       INSERT INTO songplay (start_time, user_id, level, song_id, artist_id,
                             session_id, location, user_agent)
       SELECT
-        e.ts AS start_time,
+        TIMESTAMP 'epoch' + (e.ts/1000 * INTERVAL '1 second') AS start_time,
         CAST(e.userId AS INTEGER) AS user_id,
         e.level,
         s.song_id,
@@ -166,15 +166,60 @@ def get_insert_table_queries(config):
     """)
 
     user_table_insert = ("""
+      INSERT INTO users (user_id, first_name, last_name, gender, level)
+      SELECT
+        DISTINCT CAST(userId AS INTEGER) AS user_id,
+        firstName AS first_name,
+        lastName AS last_name,
+        gender,
+        level
+      FROM
+        staging_events
+      ;
     """)
 
     song_table_insert = ("""
+      INSERT INTO song (song_id, title, artist_id, year, duration)
+      SELECT
+        DISTINCT song_id,
+        title,
+        artist_id,
+        year,
+        duration
+      FROM
+        staging_songs
+      ;
     """)
 
     artist_table_insert = ("""
+      INSERT INTO artist (artist_id, name, location, latitude, longitude)
+      SELECT
+        DISTINCT artist_id,
+        artist_name AS name,
+        artist_location AS location,
+        artist_latitude AS latitude,
+        artist_longitude AS longitude
+      FROM
+        staging_songs
+      ;
     """)
 
     time_table_insert = ("""
+      INSERT INTO time (start_time, hour, day, week, month, year, weekday)
+      SELECT
+        ts AS start_time,
+        EXTRACT(hour FROM ts) AS hour,
+        EXTRACT(day FROM ts) AS day,
+        EXTRACT(week FROM ts) AS week,
+        EXTRACT(month FROM ts) AS month,
+        EXTRACT(year FROM ts) AS year,
+        EXTRACT(weekday FROM ts) AS weekday
+      FROM (
+        SELECT
+          DISTINCT TIMESTAMP 'epoch' + (ts/1000 * INTERVAL '1 second') AS ts
+        FROM
+          staging_events)
+      ;
     """)
 
     return [songplay_table_insert, user_table_insert, song_table_insert,

@@ -15,6 +15,7 @@ def insert_tables(cur, conn, config):
     for query in sql_queries.get_insert_table_queries(config):
         cur.execute(query)
         conn.commit()
+        print("Executed: {}".format(query))
     print("Insert into star schema")
 
 
@@ -25,7 +26,7 @@ def main():
     cur = conn.cursor()
 
     load_staging_tables(cur, conn, config)
-    #insert_tables(cur, conn, config)
+    insert_tables(cur, conn, config)
 
     conn.close()
 
