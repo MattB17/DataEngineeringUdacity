@@ -1,9 +1,28 @@
+"""
+An IaC script to setup an IAM role and redshift cluster.
+
+"""
+
 import pandas as pd
 import json
 import time
 import utils
 
 def create_iam_redshift_role(iam_client, role_name):
+    """
+    Creates an IAM role to allow Redshift clusters to call AWS services.
+
+    Parameters
+    ----------
+    iam_client: The iam client used to interact with AWS IAM. Obtained by
+                calling `boto3.client('iam', ...)`.
+    role_name: The name of the Redshift role being created.
+
+    Returns
+    -------
+    None
+
+    """
     try:
         response = iam_client.create_role(
           Path='/',
@@ -21,6 +40,20 @@ def create_iam_redshift_role(iam_client, role_name):
 
 
 def create_redshift_cluster(redshift_client, config):
+    """
+    Creates a Redshift cluster based on the settings in `config`.
+
+    Parameters
+    ----------
+    redshift_client: The Redshift client used to interact with AWS. Obtained
+                     from calling `boto3.client('redshift', ...)`.
+    config: The set of configuration parameters used in cluster creation.
+
+    Returns
+    -------
+    None
+
+    """
     try:
         response = redshift_client.create_cluster(
           # Hardware parameters.
@@ -41,11 +74,42 @@ def create_redshift_cluster(redshift_client, config):
 
 
 def get_cluster_properties(redshift_client, cluster_identifier):
+    """
+    Retrieves the Redshift cluster properties of `cluster_identifier`.
+
+    Parameters
+    ----------
+    redshift_client: The Redshift client used to interact with AWS. Obtained
+                     from calling `boto3.client('redshift', ...)`.
+    cluster_identifier: A string identifying the cluster for which the
+                        properties are retrieved.
+
+    Returns
+    -------
+    The set properties corresponding the the Redshift cluster associated with
+    `cluster_identifier`.
+
+    """
     return redshift_client.describe_clusters(
       ClusterIdentifier=cluster_identifier)['Clusters'][0]
 
 
 def setup_tcp_port_for_cluster(ec2_resource, cluster_vpc_id, port):
+    """
+    Sets up the ingress TCP port for the Redshift cluster to accept connections.
+
+    Parameters
+    ----------
+    ec2_resource: The EC2 resource used to interact with AWS EC2.
+    cluster_vpc_id: The identifier for the cluster's VPC.
+    port: The port on which client's connect and receive data from the Redshift
+          cluster.
+
+    Returns
+    -------
+    None
+
+    """
     try:
         vpc = ec2_resource.Vpc(id=cluster_vpc_id)
         default_sg = list(vpc.security_groups.all())[0]
@@ -61,6 +125,18 @@ def setup_tcp_port_for_cluster(ec2_resource, cluster_vpc_id, port):
 
 
 def setup_iam_role_for_redshift(config):
+    """
+    Sets up the IAM role allowing Redshift to read from AWS S3.
+
+    Parameters
+    ----------
+    config: A set of configuration parameters used to setup the IAM role.
+
+    Returns
+    -------
+    A string representing the ARN for the created IAM role.
+
+    """
     iam_client = utils.get_iam_client(config)
 
     role_name = config.get('IAM_ROLE', 'iam_role_name')
@@ -77,6 +153,19 @@ def setup_iam_role_for_redshift(config):
 
 
 def setup_redshift_cluster(config):
+    """
+    Sets up the Redshift cluster based on `config`.
+
+    Parameters
+    ----------
+    config: A set of configuration parameters used to setup the Redshift
+            cluster.
+
+    Returns
+    -------
+    A string representing the endpoint for the created Redshift cluster.
+
+    """
     redshift_client = utils.get_redshift_client(config)
 
     create_redshift_cluster(redshift_client, config)
@@ -98,8 +187,7 @@ def setup_redshift_cluster(config):
       int(config.get('CLUSTER', 'db_port')))
 
     endpoint = cluster_properties['Endpoint']['Address']
-    role_arn = cluster_properties['IamRoles'][0]['IamRoleArn']
-    return (endpoint, role_arn)
+    return endpoint
 
 
 def main():
@@ -111,7 +199,7 @@ def main():
         print(e)
 
     try:
-        (endpoint, role_arn) = setup_redshift_cluster(config)
+        endpoint = setup_redshift_cluster(config)
         config['CLUSTER']['endpoint'] = endpoint
     except Exception as e:
         print(e)
@@ -122,6 +210,8 @@ def main():
 
     print("Connected Successfully")
 
+    # Writes the config back to the file with the addition of the IAM role ARN
+    # and the Redshift cluster endpoint.
     with open('dwh.cfg', 'w') as configfile:
         config.write(configfile)
 
