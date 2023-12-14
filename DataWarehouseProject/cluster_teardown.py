@@ -1,5 +1,6 @@
 """
-An IaC script to delete the Redshift cluster and IAM role used in the pipeline.
+An IaC script to delete the Redshift cluster and IAM role used in the pipeline
+for the Sparkify data warehouse.
 
 """
 
@@ -74,7 +75,7 @@ def remove_iam_role(config):
     Returns
     -------
     None
-    
+
     """
     iam_client = utils.get_iam_client(config)
     role_name = config.get('IAM_ROLE', 'iam_role_name')

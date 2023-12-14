@@ -1,5 +1,6 @@
 """
-An IaC script to setup an IAM role and redshift cluster.
+An IaC script to setup an IAM role and redshift cluster for the Sparkify data
+warehouse.
 
 """
 

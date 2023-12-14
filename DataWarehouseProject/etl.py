@@ -1,5 +1,6 @@
 """
-A script to migrate data from S3 to staging tables and then to a star schema.
+A script to migrate data from S3 to staging tables and then to a final star
+schema for the Sparkify data warehouse.
 
 """
 

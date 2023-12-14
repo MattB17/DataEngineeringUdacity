@@ -1,10 +1,38 @@
-# DROP TABLES
+"""
+The set of SQL queries used to build the Sparkify data warehouse from raw
+data on S3.
+
+"""
+
 def drop_table_statement(table_name, cascade=False):
+    """
+    Used to build a drop table statement for `table_name`.
+
+    Parameters
+    ----------
+    table_name: A string representing the name of the table to be dropped.
+    cascade: A boolean indicating whether the table should be dropped with the
+             cascade option.
+
+    Returns
+    -------
+    A string representing the drop table statement for `table_name`.
+
+    """
     if cascade:
         return "DROP TABLE IF EXISTS {} CASCADE".format(table_name)
     return "DROP TABLE IF EXISTS {};".format(table_name)
 
 def get_drop_table_queries():
+    """
+    The set of drop table statements for the data warehouse.
+
+    Returns
+    -------
+    A list of strings representing the queries to be executed to drop tables
+    from the data warehouse.
+
+    """
     staging_events_table_drop = drop_table_statement("staging_events")
     staging_songs_table_drop = drop_table_statement("staging_songs")
     songplay_table_drop = drop_table_statement("songplay", cascade=True)
@@ -16,8 +44,16 @@ def get_drop_table_queries():
             songplay_table_drop, user_table_drop, song_table_drop,
             artist_table_drop, time_table_drop]
 
-# CREATE TABLES
 def get_create_table_queries():
+    """
+    The set of create table statements for the data warehouse.
+
+    Returns
+    -------
+    A list of strings representing the create table queries to be performed for
+    the data warehouse.
+
+    """
     staging_events_table_create= ("""
       CREATE TABLE staging_events (
         event_id        BIGINT IDENTITY(0, 1),
@@ -117,8 +153,21 @@ def get_create_table_queries():
             songplay_table_create, user_table_create, song_table_create,
             artist_table_create, time_table_create]
 
-# STAGING TABLES
+
 def get_copy_table_queries(config):
+    """
+    The copy statements to load data into the Redshift staging tables from S3.
+
+    Parameters
+    ----------
+    config: The set of configuration parameters used to formulate the copy
+            statements.
+
+    Returns
+    -------
+    A list of copy statements to load data into Redshift staging tables from S3.
+
+    """
     staging_events_copy = ("""
       COPY staging_events FROM '{events_path}'
       CREDENTIALS 'aws_iam_role={role_arn}' compupdate off
@@ -138,8 +187,23 @@ def get_copy_table_queries(config):
 
     return [staging_events_copy, staging_songs_copy]
 
-# FINAL TABLES
+
 def get_insert_table_queries(config):
+    """
+    The set of insert statements to insert data from the Redshift staging tables
+    into the star schema for the data warehouse.
+
+    Parameters
+    ----------
+    config: A set of configuration parameters used to formulate the insert
+            statements.
+
+    Returns
+    -------
+    A list of strings representing the queries to load data into the star schema
+    from the staging tables.
+    
+    """
     songplay_table_insert = ("""
       INSERT INTO songplay (start_time, user_id, level, song_id, artist_id,
                             session_id, location, user_agent)
