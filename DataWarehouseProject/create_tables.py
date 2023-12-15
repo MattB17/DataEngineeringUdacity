@@ -7,6 +7,7 @@ already exist.
 
 """
 
+import os
 import configparser
 import utils
 import sql_queries
@@ -29,10 +30,11 @@ def drop_tables(cur, conn):
     None
 
     """
+    print("Dropping tables")
     for query in sql_queries.get_drop_table_queries():
         cur.execute(query)
         conn.commit()
-    print("Dropped tables")
+    print("Tables dropped")
 
 
 def create_tables(cur, conn):
@@ -49,14 +51,25 @@ def create_tables(cur, conn):
     None
 
     """
+    print("Creating tables")
     for query in sql_queries.get_create_table_queries():
         cur.execute(query)
         conn.commit()
-    print("Created tables")
+    print("Tables created")
 
 
 def main():
     config = utils.get_config('dwh.cfg')
+
+    # Create the cluster if it is not already setup.
+    try:
+        config.get('CLUSTER', 'endpoint')
+    except:
+        print("Running cluster setup script first")
+        print("After running etl.py please run cluster_teardown.py to remove the cluster")
+        print("The full workflow is in SparkifyPipeline.ipynb")
+        os.system('python3 cluster_setup.py')
+        config = utils.get_config('dwh.cfg')
 
     conn = utils.connect_to_database(config)
     cur = conn.cursor()

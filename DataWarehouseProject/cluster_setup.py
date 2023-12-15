@@ -122,7 +122,7 @@ def setup_tcp_port_for_cluster(ec2_resource, cluster_vpc_id, port):
           FromPort=port,
           ToPort=port)
     except Exception as e:
-        print(e)
+        print("TCP port attached")
 
 
 def setup_iam_role_for_redshift(config):

@@ -25,11 +25,12 @@ def load_staging_tables(cur, conn, config):
     None
 
     """
+    print("Loading data into staging tables")
     for query in sql_queries.get_copy_table_queries(config):
         cur.execute(query)
         conn.commit()
         print("Executed: {}".format(query))
-    print("Loaded staging tables")
+    print("Staging tables loaded")
 
 
 def insert_tables(cur, conn, config):
@@ -48,11 +49,12 @@ def insert_tables(cur, conn, config):
     None
 
     """
+    print("Inserting into star schema")
     for query in sql_queries.get_insert_table_queries(config):
         cur.execute(query)
         conn.commit()
         print("Executed: {}".format(query))
-    print("Insert into star schema")
+    print("Star schema populated")
 
 
 def main():

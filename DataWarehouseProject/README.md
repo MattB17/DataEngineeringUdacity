@@ -26,3 +26,16 @@ Dimension tables
 We will distribute the `user`, `artist`, and `time` tables using the distribution style ALL so that there is a replica of each table on each slice.
 
 `songplays` is the event based fact table so we will distribute it across slices using `song_id` as the distribution key. Likewise, `songs` will also be distributed by `song_id`.
+
+### Pipeline
+The entire pipeline can be run via the `SparkifyPipeline.ipynb` notebook.
+
+This notebook performs the following
+* loads the SQL extension
+* sets up the IAM role and Redshift cluster via `cluster_setup.py`
+* creates the staging and star schema tables via `create_tables.py`
+* performs the ETL process of loading data into staging tables from S3 and then inserting that data into the star schema tables via `etl.py`
+* executes some generic analysis queries to validate the data was loaded correctly
+* deletes the cluster and IAM role via `cluster_teardown.py`
+
+The queries for dropping tables, creating tables, loading data into the staging tables, and inserting data into the star schema can be found in `sql_queries.py`.

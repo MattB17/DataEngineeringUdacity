@@ -202,7 +202,7 @@ def get_insert_table_queries(config):
     -------
     A list of strings representing the queries to load data into the star schema
     from the staging tables.
-    
+
     """
     songplay_table_insert = ("""
       INSERT INTO songplay (start_time, user_id, level, song_id, artist_id,
@@ -239,6 +239,9 @@ def get_insert_table_queries(config):
         level
       FROM
         staging_events
+      WHERE
+        userId != ''
+        AND userId != ' '
       ;
     """)
 
