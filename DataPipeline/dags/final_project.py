@@ -60,6 +60,11 @@ def final_project():
 
     load_songplays_table = LoadFactOperator(
         task_id='Load_songplays_fact_table',
+        redshift_conn_id=REDSHIFT_CONN_ID,
+        create_table_statement=final_project_sql_statements.SqlQueries.songplay_table_create,
+        destination_table="public.songplays",
+        table_select_statement=final_project_sql_statements.SqlQueries.songplay_table_insert,
+        execute_drop=True
     )
 
     load_user_dimension_table = LoadDimensionOperator(

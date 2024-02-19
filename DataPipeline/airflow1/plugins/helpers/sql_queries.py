@@ -1,6 +1,6 @@
 class SqlQueries:
     staging_events_table_create= ("""
-      CREATE TABLE staging_events (
+      CREATE TABLE IF NOT EXISTS public.staging_events (
         event_id        BIGINT IDENTITY(0, 1),
         artist          VARCHAR,
         auth            VARCHAR(25),
@@ -24,17 +24,32 @@ class SqlQueries:
     """)
 
     staging_songs_table_create = ("""
-      CREATE TABLE staging_songs (
+      CREATE TABLE IF NOT EXISTS public.staging_songs (
         num_songs          INTEGER NOT NULL,
         artist_id          VARCHAR(25) NOT NULL,
         artist_latitude    DECIMAL,
         artist_longitude   DECIMAL,
-        artist_location    VARCHAR(1000),
-        artist_name        VARCHAR(1000),
+        artist_location    VARCHAR(MAX),
+        artist_name        VARCHAR(MAX),
         song_id            VARCHAR(25) NOT NULL,
-        title              VARCHAR(1000),
+        title              VARCHAR(MAX),
         duration           DECIMAL NOT NULL,
         year               INTEGER NOT NULL
+      );
+    """)
+
+    songplay_table_create = ("""
+      CREATE TABLE public.songplays (
+	      songplay_id varchar(32) NOT NULL,
+	      start_time timestamp NOT NULL,
+	      userid VARCHAR NOT NULL,
+	      "level" varchar(10),
+	      songid varchar(256),
+	      artistid varchar(256),
+	      sessionid INTEGER NOT NULL,
+	      location varchar(MAX),
+	      user_agent varchar(256),
+	      CONSTRAINT songplays_pkey PRIMARY KEY (songplay_id)
       );
     """)
 
@@ -50,9 +65,9 @@ class SqlQueries:
                 events.location,
                 events.useragent
                 FROM (SELECT TIMESTAMP 'epoch' + ts/1000 * interval '1 second' AS start_time, *
-            FROM staging_events
+            FROM public.staging_events
             WHERE page='NextSong') events
-            LEFT JOIN staging_songs songs
+            LEFT JOIN public.staging_songs songs
             ON events.song = songs.title
                 AND events.artist = songs.artist_name
                 AND events.length = songs.duration
@@ -60,22 +75,22 @@ class SqlQueries:
 
     user_table_insert = ("""
         SELECT distinct userid, firstname, lastname, gender, level
-        FROM staging_events
+        FROM public.staging_events
         WHERE page='NextSong'
     """)
 
     song_table_insert = ("""
         SELECT distinct song_id, title, artist_id, year, duration
-        FROM staging_songs
+        FROM public.staging_songs
     """)
 
     artist_table_insert = ("""
         SELECT distinct artist_id, artist_name, artist_location, artist_latitude, artist_longitude
-        FROM staging_songs
+        FROM public.staging_songs
     """)
 
     time_table_insert = ("""
         SELECT start_time, extract(hour from start_time), extract(day from start_time), extract(week from start_time),
                extract(month from start_time), extract(year from start_time), extract(dayofweek from start_time)
-        FROM songplays
+        FROM public.songplays
     """)
