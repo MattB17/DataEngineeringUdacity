@@ -69,18 +69,38 @@ def final_project():
 
     load_user_dimension_table = LoadDimensionOperator(
         task_id='Load_user_dim_table',
+        redshift_conn_id=REDSHIFT_CONN_ID,
+        create_table_statement=final_project_sql_statements.SqlQueries.user_table_create,
+        destination_table="public.user",
+        table_select_statement=final_project_sql_statements.SqlQueries.user_table_insert,
+        execute_drop=True
     )
 
     load_song_dimension_table = LoadDimensionOperator(
         task_id='Load_song_dim_table',
+        redshift_conn_id=REDSHIFT_CONN_ID,
+        create_table_statement=final_project_sql_statements.SqlQueries.song_table_create,
+        destination_table="public.song",
+        table_select_statement=final_project_sql_statements.SqlQueries.song_table_insert,
+        execute_drop=True
     )
 
     load_artist_dimension_table = LoadDimensionOperator(
         task_id='Load_artist_dim_table',
+        redshift_conn_id=REDSHIFT_CONN_ID,
+        create_table_statement=final_project_sql_statements.SqlQueries.artist_table_create,
+        destination_table="public.artist",
+        table_select_statement=final_project_sql_statements.SqlQueries.artist_table_insert,
+        execute_drop=True
     )
 
     load_time_dimension_table = LoadDimensionOperator(
         task_id='Load_time_dim_table',
+        redshift_conn_id=REDSHIFT_CONN_ID,
+        create_table_statement=final_project_sql_statements.SqlQueries.time_table_create,
+        destination_table="public.time",
+        table_select_statement=final_project_sql_statements.SqlQueries.time_table_insert,
+        execute_drop=Tru
     )
 
     run_quality_checks = DataQualityOperator(

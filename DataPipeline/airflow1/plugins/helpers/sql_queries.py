@@ -39,58 +39,134 @@ class SqlQueries:
     """)
 
     songplay_table_create = ("""
-      CREATE TABLE public.songplays (
-	      songplay_id varchar(32) NOT NULL,
-	      start_time timestamp NOT NULL,
-	      userid VARCHAR NOT NULL,
-	      "level" varchar(10),
-	      songid varchar(256),
-	      artistid varchar(256),
-	      sessionid INTEGER NOT NULL,
-	      location varchar(MAX),
-	      user_agent varchar(256),
-	      CONSTRAINT songplays_pkey PRIMARY KEY (songplay_id)
+      CREATE TABLE IF NOT EXISTS public.songplay (
+        songplay_id   VARCHAR NOT NULL,
+        start_time    TIMESTAMP NOT NULL sortkey,
+        user_id       INTEGER NOT NULL,
+        level         VARCHAR(10),
+        song_id       VARCHAR(25) NOT NULL distkey,
+        artist_id     VARCHAR(25) NOT NULL,
+        session_id    INTEGER NOT NULL,
+        location      VARCHAR,
+        user_agent    VARCHAR
       );
     """)
 
     songplay_table_insert = ("""
-        SELECT
-                md5(events.sessionid || events.start_time) songplay_id,
-                events.start_time,
-                events.userid,
-                events.level,
-                songs.song_id,
-                songs.artist_id,
-                events.sessionid,
-                events.location,
-                events.useragent
-                FROM (SELECT TIMESTAMP 'epoch' + ts/1000 * interval '1 second' AS start_time, *
-            FROM public.staging_events
-            WHERE page='NextSong') events
-            LEFT JOIN public.staging_songs songs
-            ON events.song = songs.title
-                AND events.artist = songs.artist_name
-                AND events.length = songs.duration
+      SELECT
+        md5(e.sessionId || TIMESTAMP 'epoch' + (e.ts/1000 * INTERVAL '1 second')) AS songplay_id,
+        TIMESTAMP 'epoch' + (e.ts/1000 * INTERVAL '1 second') AS start_time,
+        CAST(e.userId AS INTEGER) AS user_id,
+        e.level,
+        s.song_id,
+        s.artist_id,
+        e.sessionId AS session_id,
+        e.location,
+        e.userAgent AS user_agent
+      FROM
+        public.staging_events AS e
+      INNER JOIN
+        public.staging_songs AS s
+      ON
+        e.song = s.title AND e.artist = s.artist_name
+      WHERE
+        e.page = 'NextSong'
+      ORDER BY
+        e.ts ASC
+    """)
+
+    user_table_create = ("""
+      CREATE TABLE IF NOT EXISTS public.user (
+        user_id       BIGINT NOT NULL sortkey,
+        first_name    VARCHAR(15),
+        last_name     VARCHAR(15),
+        gender        VARCHAR(1),
+        level         VARCHAR(10),
+	      CONSTRAINT users_pkey PRIMARY KEY (user_id)
+      );
     """)
 
     user_table_insert = ("""
-        SELECT distinct userid, firstname, lastname, gender, level
-        FROM public.staging_events
-        WHERE page='NextSong'
+      SELECT
+        DISTINCT CAST(userId AS INTEGER) AS user_id,
+        firstName AS first_name,
+        lastName AS last_name,
+        gender,
+        level
+      FROM
+        public.staging_events
+      WHERE
+        userId != ''
+        AND userId != ' '
+        AND page = 'NextSong'
+    """)
+
+    song_table_create = ("""
+      CREATE TABLE IF NOT EXISTS public.song (
+        song_id       VARCHAR(25) NOT NULL sortkey distkey,
+        title         VARCHAR(MAX),
+        artist_id     VARCHAR(25) NOT NULL,
+        year          INTEGER NOT NULL,
+        duration      DECIMAL NOT NULL,
+        CONSTRAINT songs_pkey PRIMARY KEY (song_id)
+      );
     """)
 
     song_table_insert = ("""
-        SELECT distinct song_id, title, artist_id, year, duration
-        FROM public.staging_songs
+      SELECT
+        DISTINCT song_id,
+        title,
+        artist_id,
+        year,
+        duration
+      FROM
+        public.staging_songs
+    """)
+
+    artist_table_create = ("""
+      CREATE TABLE IF NOT EXISTS public.artist (
+        artist_id     VARCHAR(25) NOT NULL sortkey,
+        name          VARCHAR(MAX),
+        location      VARCHAR(MAX),
+        latitude      DECIMAL,
+        longitude     DECIMAL,
+        CONSTRAINT artists_pkey PRIMARY KEY (artist_id)
+      );
     """)
 
     artist_table_insert = ("""
-        SELECT distinct artist_id, artist_name, artist_location, artist_latitude, artist_longitude
-        FROM public.staging_songs
+      SELECT
+        DISTINCT artist_id,
+        artist_name AS name,
+        artist_location AS location,
+        artist_latitude AS latitude,
+        artist_longitude AS longitude
+      FROM
+        public.staging_songs
+    """)
+
+    time_table_create = ("""
+      CREATE TABLE public.time (
+        start_time    TIMESTAMP NOT NULL sortkey,
+        hour          INTEGER NOT NULL,
+        day           INTEGER NOT NULL,
+        week          INTEGER NOT NULL,
+        month         INTEGER NOT NULL,
+        year          INTEGER NOT NULL,
+        weekday       VARCHAR(1) NOT NULL,
+        CONSTRAINT time_pkey PRIMARY KEY (start_time)
+      );
     """)
 
     time_table_insert = ("""
-        SELECT start_time, extract(hour from start_time), extract(day from start_time), extract(week from start_time),
-               extract(month from start_time), extract(year from start_time), extract(dayofweek from start_time)
-        FROM public.songplays
+      SELECT
+        start_time,
+        EXTRACT(hour FROM start_time) AS hour,
+        EXTRACT(day FROM start_time) AS day,
+        EXTRACT(week FROM start_time) AS week,
+        EXTRACT(month FROM start_time) AS month,
+        EXTRACT(year FROM start_time) AS year,
+        EXTRACT(weekday FROM start_time) AS weekday
+      FROM
+        public.songplay
     """)
