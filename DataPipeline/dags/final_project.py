@@ -100,11 +100,42 @@ def final_project():
         create_table_statement=final_project_sql_statements.SqlQueries.time_table_create,
         destination_table="public.time",
         table_select_statement=final_project_sql_statements.SqlQueries.time_table_insert,
-        execute_drop=Tru
+        execute_drop=True
     )
 
-    run_quality_checks = DataQualityOperator(
-        task_id='Run_data_quality_checks',
+    songplays_quality_check = DataQualityOperator(
+        task_id='songplays_quality_check',
+        redshift_conn_id=REDSHIFT_CONN_ID,
+        table="public.songplays",
+        non_null_cols=["songplay_id", "start_time", "user_id", "song_id", "artist_id", "session_id"]
+    )
+
+    user_quality_check = DataQualityOperator(
+        task_id='user_quality_check',
+        redshift_conn_id=REDSHIFT_CONN_ID,
+        table="public.user",
+        non_null_cols=["user_id"]
+    )
+
+    song_quality_check = DataQualityOperator(
+        task_id='song_quality_check',
+        redshift_conn_id=REDSHIFT_CONN_ID,
+        table="public.song",
+        non_null_cols=["song_id", "artist_id", "year", "duration"]
+    )
+
+    artist_quality_check = DataQualityOperator(
+        task_id='artist_quality_check',
+        redshift_conn_id=REDSHIFT_CONN_ID,
+        table="public.artist",
+        non_null_cols=["artist_id"]
+    )
+
+    time_quality_check = DataQualityOperator(
+        task_id='time_quality_check',
+        redshift_conn_id=REDSHIFT_CONN_ID,
+        table="public.time",
+        non_null_cols=["start_time"]
     )
 
     end_operator = DummyOperator(task_id="End_execution")
@@ -124,14 +155,20 @@ def final_project():
     load_songplays_table >> load_song_dimension_table
     load_songplays_table >> load_artist_dimension_table
     load_songplays_table >> load_time_dimension_table
+    # We can also start quality checks on the songplays tables
+    load_songplays_table >> songplays_quality_check
 
     # Once all the tables can be loaded we can perform data quality checks.
-    load_user_dimension_table >> run_quality_checks
-    load_song_dimension_table >> run_quality_checks
-    load_artist_dimension_table >> run_quality_checks
-    load_time_dimension_table >> run_quality_checks
+    load_user_dimension_table >> user_quality_check
+    load_song_dimension_table >> song_quality_check
+    load_artist_dimension_table >> artist_quality_check
+    load_time_dimension_table >> time_quality_check
 
     # After quality checks complete, we are finished.
-    run_quality_checks >> end_operator
+    songplays_quality_check >> end_operator
+    user_quality_check >> end_operator
+    song_quality_check >> end_operator
+    artist_quality_check >> end_operator
+    time_quality_check >> end_operator
 
 final_project_dag = final_project()
